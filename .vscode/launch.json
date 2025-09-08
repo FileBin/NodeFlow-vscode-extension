@@ -1,0 +1,16 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"${env:TMPDIR}/ext-test-workspace",
+				"--extensionDevelopmentPath=${workspaceRoot}/packages/extension"
+			],
+			"outFiles": ["${workspaceFolder}/out/**/*.js"],
+		}
+	]
+}

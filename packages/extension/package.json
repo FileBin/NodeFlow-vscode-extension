@@ -1,0 +1,55 @@
+{
+	"name": "nodeflow",
+	"displayName": "NodeFlow",
+	"description": "Custom Editor API Samples",
+	"version": "0.0.1",
+	"publisher": "filebin",
+	"private": true,
+	"license": "GPL-3.0-only",
+	"engines": {
+		"vscode": "^1.100.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"activationEvents": [],
+	"main": "./out/extension.js",
+	"contributes": {
+		"customEditors": [
+			{
+				"viewType": "nodeFlow.nodeEditor",
+				"displayName": "NodeFlow NodeEditor",
+				"selector": [
+					{
+						"filenamePattern": "*.nf"
+					}
+				]
+			}
+		],
+		"commands": [
+			{
+				"command": "nodeFlow.node.new",
+				"title": "Create new Node File",
+				"category": "NodeFlow"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "bun run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint",
+		"watch": "tsc -w -p ./"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.13.0",
+		"@stylistic/eslint-plugin": "^2.9.0",
+		"@types/node": "^22",
+		"@types/vscode": "^1.100.0",
+		"eslint": "^9.13.0",
+		"typescript": "^5.9.2",
+		"typescript-eslint": "^8.39.0"
+	},
+	"dependencies": {
+		"yaml": "^2.8.1"
+	}
+}

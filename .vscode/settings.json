@@ -1,0 +1,7 @@
+{
+    "eslint.useFlatConfig": false,
+    "emmet.includeLanguages": {
+        "vue": "html",
+        "vue-html": "html",
+    },
+}
