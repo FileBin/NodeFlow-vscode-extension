@@ -12,6 +12,9 @@ interface INodeDocumentProperties {
     getEmitters(): Emitter[];
 }
 
+// TODO split node document in file model and runtime model
+// and implement parsing & serializing methods
+
 export class ComponentDocumentProperties implements INodeDocumentProperties {
     getSlots(): Slot[] {
         return this.slots;
@@ -76,6 +79,10 @@ export class NodeDocument implements INode {
     getSlots(): Slot[] { return this.properties.getSlots(); }
     getEmitters(): Emitter[] { return this.properties.getEmitters(); }
 }
+
+// TODO i dont think we need connection as separate entity
+// just reference slot directly in emitter
+// for multi emitter change it to array
 
 export class Connection {
     emitter: Emitter;

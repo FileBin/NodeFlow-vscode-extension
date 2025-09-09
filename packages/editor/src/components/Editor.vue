@@ -12,6 +12,7 @@
 </template>
 
 <style>
+  /* TODO implement node reading and position */
   .shifted-square-container {
       width: 100px;
       height: 100px;
