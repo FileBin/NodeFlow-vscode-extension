@@ -1,6 +1,6 @@
-import { randomUUID, UUID } from 'crypto';
+import { randomUUID, type UUID } from 'crypto';
 import config from '../config.json';
-
+import { type Emitter, Slot, type INode, type Node } from './node';
 
 export enum NodeDocumentType {
     "component",
@@ -8,13 +8,6 @@ export enum NodeDocumentType {
 }
 
 interface INodeDocumentProperties {
-    getSlots(): Slot[];
-    getEmitters(): Emitter[];
-}
-
-interface INode {
-    getId(): UUID;
-    getName(): string;
     getSlots(): Slot[];
     getEmitters(): Emitter[];
 }
@@ -41,10 +34,7 @@ export class EntrypointDocumentProperties implements INodeDocumentProperties {
 
     getSlots(): Slot[] {
         return [
-            {
-                name: this.entrypointName,
-                node: this.document,
-            }
+            new Slot(this.document, this.entrypointName),
         ];
     }
 
@@ -85,38 +75,6 @@ export class NodeDocument implements INode {
     getName(): string { return this.name; }
     getSlots(): Slot[] { return this.properties.getSlots(); }
     getEmitters(): Emitter[] { return this.properties.getEmitters(); }
-}
-
-export class Node implements INode {
-    id: UUID = randomUUID();
-    name!: string;
-    slots: Slot[] = [];
-    emitters: Emitter[] = [];
-
-    getId(): UUID { return this.id; }
-    getName(): string { return this.name; }
-    getSlots(): Slot[] { return this.slots; }
-    getEmitters(): Emitter[] { return this.emitters; }
-}
-
-export class Slot {
-    node: INode;
-    name: string;
-
-    constructor(node: INode, name: string) {
-        this.node = node;
-        this.name = name;
-    }
-}
-
-export class Emitter {
-    node: INode;
-    name: string;
-
-    constructor(node: INode, name: string) {
-        this.node = node;
-        this.name = name;
-    }
 }
 
 export class Connection {

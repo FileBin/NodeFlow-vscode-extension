@@ -34,7 +34,6 @@
   }
 
   .container {
-
     overflow: hidden;
     width: 100vw;
     height: 100vh;
@@ -57,7 +56,8 @@
 import { useConfigStore } from '@/stores/config';
 import { useWebviewStore } from '@/stores/webview';
 import { translate2d, scale2d, getMatrixScaleFactor2D, vector2D, scaleXY } from '@/utils/matrixes';
-import { resourceUrl } from '@/utils/vscode';
+import { postMessage, resourceUrl } from '@/utils/vscode';
+import { SetNodeCreatePositionReport } from 'shared/models/message';
 import { array, NDArray } from 'vectorious';
 import { ref, useTemplateRef } from 'vue';
 
@@ -110,14 +110,22 @@ function updateStyle() {
 function handleMouseMoveEvent(e: MouseEvent) {
   const client_rect = container.value?.getBoundingClientRect()
   const mouseButton = configStore.editor.navigation.translateMouseButton;
-
-  if (client_rect) {
-    let button = (e.buttons | e.button)
-    if (button == mouseButton) {
-      webviewStore.transform(translate2d(e.movementX, e.movementY))
-      updateState();
-    }
+  if (!client_rect) { 
+    return; 
   }
+  let button = (e.buttons | e.button)
+  if (button == mouseButton) {
+    webviewStore.transform(translate2d(e.movementX, e.movementY))
+    updateState();
+  }
+  setNodeCreatePosition(e, client_rect);
+}
+
+
+function setNodeCreatePosition(e: MouseEvent, clientRect: DOMRect) {
+  const clientPos = vector2D(e.clientX - clientRect.left, e.clientY - clientRect.top);
+  const worldPos = clientPos.multiply(webviewStore.worldMatrix);
+  postMessage(new SetNodeCreatePositionReport(worldPos.data[0], worldPos.data[1]));
 }
 
 function handleMouseScrollEvent(e: WheelEvent) {

@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { NodeFlowEditorProvider } from '../editors/nodeFlowEditor';
-import { NodeDocument, NodeDocumentType } from '../models/nodeDocument';
+import { NodeDocument, NodeDocumentType } from '../../../shared/models/nodeDocument';
 import { stringify } from 'yaml';
 
-export function registerCreateNodeFlowFileCommand(): vscode.Disposable {
-    const commandId = 'nodeFlow.node.new';
+export function registerCreateNodeFileCommand(): vscode.Disposable {
+    const commandId = 'nodeFlow.file.new';
 
     // The command is registered here and will be available in the Command Palette.
     return vscode.commands.registerCommand(commandId, async () => {

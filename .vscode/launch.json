@@ -6,6 +6,10 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
+			"resolveSourceMapLocations": [
+				"${workspaceFolder}/packages/extension/**",
+				"!**/node_modules/**"
+			],
 			"args": [
 				"${env:TMPDIR}/ext-test-workspace",
 				"--extensionDevelopmentPath=${workspaceRoot}/packages/extension"

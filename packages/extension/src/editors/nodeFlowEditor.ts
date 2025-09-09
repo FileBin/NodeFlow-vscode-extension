@@ -1,33 +1,39 @@
 import * as vscode from 'vscode';
 import { parse, stringify } from 'yaml';
-import { NodeDocument } from '../models/nodeDocument';
+import { NodeDocument } from '../../../shared/models/nodeDocument';
 import path from 'path';
+import { DocumentUpdatedReport, Message, MessageType, SetNodeCreatePositionReport } from '../../../shared/models/message';
+import { Node } from '../../../shared/models/node';
 
-/**
- * Provider for cat scratch editors.
- * 
- * Cat scratch editors are used for `.cscratch` files, which are just json files.
- * To get started, run this extension and open an empty `.cscratch` file in VS Code.
- * 
- * This provider demonstrates:
- * 
- * - Setting up the initial webview for a custom editor.
- * - Loading scripts and styles in a custom editor.
- * - Synchronizing changes between a text document and a custom editor.
- */
 export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 
 	public static register(context: vscode.ExtensionContext): vscode.Disposable {
 		const provider = new NodeFlowEditorProvider(context);
-		const providerRegistration = vscode.window.registerCustomEditorProvider(NodeFlowEditorProvider.viewType, provider);
+		const providerRegistration = 
+		vscode.window.registerCustomEditorProvider(NodeFlowEditorProvider.viewType, provider, {
+			supportsMultipleEditorsPerDocument: true,
+		});
 		return providerRegistration;
 	}
 
 	public static readonly viewType = 'nodeFlow.nodeEditor';
 
+	private static nodeCreationPosition = {
+		x: 0,
+		y: 0,
+	};
+
+	private static _activeNodeDocument: vscode.TextDocument | null = null;
+
+	public static get activeNodeDocument(): vscode.TextDocument | null {
+		return NodeFlowEditorProvider._activeNodeDocument;
+	}
+
 	constructor(
 		private readonly context: vscode.ExtensionContext
 	) { }
+
+
 
 	/**
 	 * Called when our custom editor is opened.
@@ -42,7 +48,6 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 		// Setup initial content for the webview
 		webviewPanel.webview.options = {
 			enableScripts: true,
-
 			localResourceRoots: [
                 vscode.Uri.file(
                     path.join(this.context.extensionPath, "vue-dist", "assets")
@@ -52,11 +57,26 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
 		function updateWebview() {
-			webviewPanel.webview.postMessage({
-				type: 'update',
-				text: NodeFlowEditorProvider.getNodeDocument(document),
-			});
+			webviewPanel.webview.postMessage(
+				new DocumentUpdatedReport(
+					NodeFlowEditorProvider.getNodeDocument(document)));
 		}
+
+		function updateActiveDocument(wp: vscode.WebviewPanel) {
+			if(wp.active) {
+				NodeFlowEditorProvider._activeNodeDocument = document;
+			} else {
+				if (NodeFlowEditorProvider._activeNodeDocument === document) {
+          			NodeFlowEditorProvider._activeNodeDocument = null;
+        		}
+			}
+		}
+
+		updateActiveDocument(webviewPanel);
+
+		const changeStateSubscription = webviewPanel.onDidChangeViewState(e => {
+			updateActiveDocument(e.webviewPanel);
+		});
 
 		// Hook up event handlers so that we can synchronize the webview with the text document.
 		//
@@ -75,17 +95,21 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 		// Make sure we get rid of the listener when our editor is closed.
 		webviewPanel.onDidDispose(() => {
 			changeDocumentSubscription.dispose();
+			changeStateSubscription.dispose();
 		});
 
 		// Receive message from the webview.
 		webviewPanel.webview.onDidReceiveMessage(e => {
-			switch (e.type) {
-				case 'add':
-					// this.addNewNode(document);
-					return;
+			const message = e as Message
 
-				case 'delete':
-					// this.deleteNode(document, e.id);
+			switch (message.type) {
+				case MessageType.setNodeCreatePosition:
+					const m = message as SetNodeCreatePositionReport
+
+					NodeFlowEditorProvider.nodeCreationPosition = {
+						x: m.x,
+						y: m.y,
+					}
 					return;
 			}
 		});
@@ -133,32 +157,16 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 	/**
 	 * Try to get a current document as json text.
 	 */
-	private static getNodeDocument(document: vscode.TextDocument): NodeDocument | null {
+	public static getNodeDocument(document: vscode.TextDocument): NodeDocument {
 		const text = document.getText();
 		if (text.trim().length === 0) {
-			return null;
+			throw new Error('TextDocument is empty');
 		}
 
 		try {
 			return parse(text);
 		} catch {
-			throw new Error('Could not get document as json. Content is not valid json');
+			throw new Error('Failed to parse textDocument as NodeDocument');
 		}
-	}
-
-	/**
-	 * Write out the json to a given document.
-	 */
-	private updateTextDocument(document: vscode.TextDocument, json: any) {
-		const edit = new vscode.WorkspaceEdit();
-
-		// Just replace the entire document every time for this example extension.
-		// A more complete extension should compute minimal edits instead.
-		edit.replace(
-			document.uri,
-			new vscode.Range(0, 0, document.lineCount, 0),
-			stringify(json, null, 2));
-
-		return vscode.workspace.applyEdit(edit);
 	}
 }
