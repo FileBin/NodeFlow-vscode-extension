@@ -1,76 +1,47 @@
-import { randomUUID, type UUID } from 'crypto';
+import { type Point2D } from './util'
+import type { EndpointRefernce } from './nodeDocument'
+import { getMathNodeEmitters, getMathNodeLabel, getMathNodeSlots, type MathNode } from './nodes/mathNode'
 
-export enum NodeTypes {
-    add = '+',
-    sub = '-',
-    mul = '*',
-    div = '/',
-    split = 'split',
-    merge = 'merge',
+export enum NodeType {
+  Math = 'math',
 }
 
-export interface INode {
-    getId(): UUID;
-    getName(): string;
-    getSlots(): Slot[];
-    getEmitters(): Emitter[];
+export interface Node {
+  type: NodeType
+  position: Point2D
+  slotConnections: { [name: string]: EndpointRefernce }
 }
 
-export class Node implements INode {
-    private _id: UUID = randomUUID();
-    slots: Slot[] = [];
-    emitters: Emitter[] = [];
-
-    constructor(private _name: string) { }
-
-    getId(): UUID { return this._id; }
-    getName(): string { return this._name; }
-    getSlots(): Slot[] { return this.slots; }
-    getEmitters(): Emitter[] { return this.emitters; }
-
-    toJSON() {
-        return {
-          id: this._id,
-          name: this._name,
-          slots: this.slots.map(x => x.toJSON()),
-          emitters: this.emitters.map(x => x.toJSON()),
-        } as NodeJSON;
-    }
+export interface EndpointData {
+  name: string
+  // TODO implement data types system
 }
 
-export interface NodeJSON {
-    id: UUID,
-    name: string,
-    slots: SlotJSON[],
-    emitters: EmitterJSON[],
+export function createNode(position: Point2D, type: NodeType): Node {
+  return {
+    position: position,
+    type: type,
+    slotConnections: {},
+  }
 }
 
-export class Slot implements SlotJSON {
-    public get name(): string { return this._name; }
-    public get node(): INode {return this._node; }
-
-    constructor(private _node: INode, private _name: string) { }
-
-    toJSON() {
-        return this as SlotJSON;
-    }
+export function getNodeLabel(node: Node): string {
+  switch (node.type) {
+    case NodeType.Math:
+      return getMathNodeLabel(node as MathNode)
+  }
 }
 
-export interface SlotJSON {
-    name: string,
+export function getNodeSlots(node: Node): EndpointData[] {
+  switch (node.type) {
+    case NodeType.Math:
+      return getMathNodeSlots()
+  }
 }
 
-export class Emitter implements EmitterJSON {
-    public get name(): string { return this._name; }
-    public get node(): INode {return this._node; }
-
-    constructor(private _node: INode, private _name: string) { }
-
-    toJSON() {
-        return this as EmitterJSON;
-    }
-}
-
-export interface EmitterJSON {
-    name: string,
+export function getNodeEmitters(node: Node): EndpointData[] {
+  switch (node.type) {
+    case NodeType.Math:
+      return getMathNodeEmitters()
+  }
 }

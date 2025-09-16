@@ -1,9 +1,10 @@
-import * as vscode from 'vscode';
-import { parse, stringify } from 'yaml';
-import { NodeDocument } from '../../../shared/models/nodeDocument';
 import path from 'path';
+import * as vscode from 'vscode';
+import { parse } from 'yaml';
+
+import { NodeDocument } from '../../../shared/models/nodeDocument';
 import { DocumentUpdatedReport, Message, MessageType, SetNodeCreatePositionReport } from '../../../shared/models/message';
-import { Node } from '../../../shared/models/node';
+import { Point2D } from '../../../shared/models/util';
 
 export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 
@@ -18,10 +19,14 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 
 	public static readonly viewType = 'nodeFlow.nodeEditor';
 
-	private static nodeCreationPosition = {
+	private static _nodeCreationPosition: Point2D = {
 		x: 0,
 		y: 0,
 	};
+
+	public static get nodeCreationPosition(): Point2D {
+		return NodeFlowEditorProvider._nodeCreationPosition;
+	}
 
 	private static _activeNodeDocument: vscode.TextDocument | null = null;
 
@@ -59,7 +64,7 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 		function updateWebview() {
 			webviewPanel.webview.postMessage(
 				new DocumentUpdatedReport(
-					NodeFlowEditorProvider.getNodeDocument(document)));
+					NodeFlowEditorProvider.getSerializedNodeDocument(document)));
 		}
 
 		function updateActiveDocument(wp: vscode.WebviewPanel) {
@@ -106,10 +111,7 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 				case MessageType.setNodeCreatePosition:
 					const m = message as SetNodeCreatePositionReport
 
-					NodeFlowEditorProvider.nodeCreationPosition = {
-						x: m.x,
-						y: m.y,
-					}
+					NodeFlowEditorProvider._nodeCreationPosition = m.pos
 					return;
 			}
 		});
@@ -157,7 +159,7 @@ export class NodeFlowEditorProvider implements vscode.CustomTextEditorProvider {
 	/**
 	 * Try to get a current document as json text.
 	 */
-	public static getNodeDocument(document: vscode.TextDocument): NodeDocument {
+	public static getSerializedNodeDocument(document: vscode.TextDocument): NodeDocument {
 		const text = document.getText();
 		if (text.trim().length === 0) {
 			throw new Error('TextDocument is empty');

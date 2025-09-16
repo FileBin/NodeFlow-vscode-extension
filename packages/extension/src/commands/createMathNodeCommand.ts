@@ -1,21 +1,23 @@
 import * as vscode from 'vscode';
 import { NodeFlowEditorProvider } from '../editors/nodeFlowEditor';
-import { Node, NodeTypes } from '../../../shared/models/node';
+import { Node } from '../../../shared/models/node';
 import { stringify } from 'yaml';
+import { createMathNode, MathNodeData, MathOperation } from '../../../shared/models/nodes/mathNode';
+import { addNodeToDocument } from '../../../shared/models/nodeDocument';
 
-export function registerCreateNodeCommand(): vscode.Disposable {
-    const commandId = 'nodeFlow.node.new';
+export function registerCreateMathNodeCommand(): vscode.Disposable {
+    const commandId = 'nodeFlow.node.math.new';
 
     // The command is registered here and will be available in the Command Palette.
     return vscode.commands.registerCommand(commandId, async () => {
         // Prompt the user for a new file name.
-        var picks = Object.values(NodeTypes) as string[];
+        var picks = Object.values(MathOperation) as string[];
         picks = picks.splice(0, picks.length/2) as string[];
         const nodeTypes = await vscode.window.showQuickPick(picks, {canPickMany: false});
-        const nodeType = nodeTypes?.at(0);
+        const mathOperation = nodeTypes?.at(0) as MathOperation;
 
         // If the user cancels, do nothing.
-        if (!nodeType) {
+        if (!mathOperation) {
             vscode.window.showErrorMessage("No nodeType was selected!");
             return;
         }
@@ -27,16 +29,20 @@ export function registerCreateNodeCommand(): vscode.Disposable {
             return;
         }
 
-        createNode(doc, new Node(nodeType));
+        const nodeData: MathNodeData = {
+          mathOperation: MathOperation.add
+        }
+
+        createNode(doc, createMathNode(NodeFlowEditorProvider.nodeCreationPosition, nodeData));
     });
 }
 
 function createNode(document: vscode.TextDocument, node: Node) {
   const edit = new vscode.WorkspaceEdit()
 
-  const nodeDoc = NodeFlowEditorProvider.getNodeDocument(document)
+  const nodeDoc = NodeFlowEditorProvider.getSerializedNodeDocument(document)
 
-  nodeDoc.nodes.push(node)
+  addNodeToDocument(nodeDoc, node);
 
   // Just replace the entire document every time for this example extension.
   // A more complete extension should compute minimal edits instead.

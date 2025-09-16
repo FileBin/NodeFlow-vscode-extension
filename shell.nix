@@ -7,6 +7,7 @@ let
     vscodeMutable = (pkgs.callPackage ./vscode.nix {
             extensionsPath = extensionsPath;
             vscodeExtensions = with vscode-extensions; [
+                continue.continue
                 tal7aouy.icons
                 jnoortheen.nix-ide
                 wmaurer.change-case
@@ -14,6 +15,7 @@ let
                 vue.volar
                 esbenp.prettier-vscode
                 editorconfig.editorconfig
+                gruntfuggly.todo-tree
             ] ++ vscode-utils.extensionsFromVscodeMarketplace [
                 {
                     name = "tcv-typescript-constructor-generator";

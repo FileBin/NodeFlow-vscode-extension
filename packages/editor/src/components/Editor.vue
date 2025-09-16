@@ -1,26 +1,19 @@
 <template>
-  <div class="container" ref="container" @mousemove="handleMouseMoveEvent" @wheel="handleMouseScrollEvent"
-    @touchmove="handleTouchEvent" @touchend="handleTouchEndEvent" @mouseup="handleTouchEndEvent"
-    @pointerdown="doubleTap" @pointerup="e => myLatestTapPos = array([e.clientX, e.clientY])"
-    @touchcancel="tapsNumber = 1">
+  <div class="container" ref="container" @mousemove="handleMouseMoveEvent" @wheel="handleMouseScrollEvent" @touchmove="handleTouchEvent"
+      @touchend="handleTouchEndEvent" @mouseup="handleTouchEndEvent" @pointerdown="doubleTap"
+      @pointerup="e => myLatestTapPos = array([e.clientX, e.clientY])" @touchcancel="tapsNumber = 1">
     <div class="background canvas-component" ref="bg_canvas"
-      v-bind:style="{ opacity: bg_opacity, width: bg_scale, height: bg_scale, transform: bg_style }"></div>
-    <div class="stretch canvas-component" ref="content" v-bind:style="{ transform: style }">
-      <div class="shifted-square-container"></div>
+      :style="{ opacity: bg_opacity, width: bg_scale, height: bg_scale, transform: bg_style }"></div>
+    <div class="stretch canvas-component" ref="content" :style="{ transform: style }">
+      <Node v-for="node in nodes" :model="node"/>
     </div>
   </div>
 </template>
 
+
 <style>
   /* TODO implement node reading and position */
-  .shifted-square-container {
-      width: 100px;
-      height: 100px;
-      background-color: #2294e0ff;
-      position: relative;
-      top: 30px;
-      left: 50px;
-  }
+
 
   .canvas-component {
     transform-origin: top left;
@@ -54,13 +47,15 @@
 </style>
 
 <script setup lang="ts">
+import Node from './nodes/Node.vue';
 import { useConfigStore } from '@/stores/config';
 import { useWebviewStore } from '@/stores/webview';
 import { translate2d, scale2d, getMatrixScaleFactor2D, vector2D, scaleXY } from '@/utils/matrixes';
 import { postMessage, resourceUrl } from '@/utils/vscode';
-import { SetNodeCreatePositionReport } from 'shared/models/message';
+import { DocumentUpdatedReport, Message, MessageType, SetNodeCreatePositionReport } from 'shared/models/message';
+import { getNodeInstances, NodeDocument, NodeInstance } from 'shared/models/nodeDocument';
 import { array, NDArray } from 'vectorious';
-import { ref, useTemplateRef } from 'vue';
+import { Ref, ref, useTemplateRef } from 'vue';
 
 const grid_res_url = `url(${resourceUrl('./assets/grid_tile.svg')})`;
 
@@ -71,28 +66,52 @@ const container = useTemplateRef('container')
 const webviewStore = useWebviewStore();
 const configStore = useConfigStore();
 
+const nodes: Ref<NodeInstance[]> = ref([])
+
 const style = ref('')
 const bg_style = ref('')
 const bg_scale = ref('')
 const bg_opacity = ref(1.0)
 
+
+//TODO move to service
+window.addEventListener('message', event => {
+  const message = event.data as Message // The json data that the extension sent
+  switch (message.type) {
+    case MessageType.documentUpdated:
+      const documentUpdatedReport = message as DocumentUpdatedReport
+      const doc = documentUpdatedReport.document;
+      webviewStore.updateDocument(doc)
+      onDocumentUpdated(doc);
+      return;
+  }
+});
+
+function onDocumentUpdated(document: NodeDocument) {
+  nodes.value = getNodeInstances(document);
+}
+
 updateState();
+
+if(webviewStore.nodeDocument != null)
+  onDocumentUpdated(webviewStore.nodeDocument);
 
 function updateState() {
   updateStyle();
 }
 
 function updateStyle() {
-  const t = webviewStore.worldMatrix;
-
-  const scaleFactor = getMatrixScaleFactor2D(t);
-
-  const gridSize = 50 * scaleFactor
+  let t = webviewStore.worldMatrix;
   let x = t.data[6];
   let y = t.data[7];
-
   style.value = `matrix(${t.data[0]}, ${t.data[1]}, ${t.data[3]}, ${t.data[4]}, ${x}, ${y})`
-  
+
+  t = t.multiply(scale2d(0.33));
+
+  const scaleFactor = getMatrixScaleFactor2D(t);
+ 
+  const gridSize = 50 * scaleFactor
+
   x %= gridSize
   y %= gridSize
 
@@ -125,8 +144,11 @@ function handleMouseMoveEvent(e: MouseEvent) {
 
 function setNodeCreatePosition(e: MouseEvent, clientRect: DOMRect) {
   const clientPos = vector2D(e.clientX - clientRect.left, e.clientY - clientRect.top);
-  const worldPos = clientPos.multiply(webviewStore.worldMatrix);
-  postMessage(new SetNodeCreatePositionReport(worldPos.data[0], worldPos.data[1]));
+  const worldPos = clientPos.multiply(webviewStore.worldMatrix.inv());
+  postMessage(new SetNodeCreatePositionReport({ 
+    x: worldPos.data[0],
+    y: worldPos.data[1],
+  }));
 }
 
 function handleMouseScrollEvent(e: WheelEvent) {

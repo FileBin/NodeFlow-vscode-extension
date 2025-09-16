@@ -4,4 +4,5 @@
         "vue": "html",
         "vue-html": "html",
     },
+    "editor.tabSize": 2
 }

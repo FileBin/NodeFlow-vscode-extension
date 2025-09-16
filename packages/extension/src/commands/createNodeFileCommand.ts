@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { NodeFlowEditorProvider } from '../editors/nodeFlowEditor';
-import { NodeDocument, NodeDocumentType } from '../../../shared/models/nodeDocument';
+import { CreateEmptyNodeDocument, NodeDocument, NodeDocumentType } from '../../../shared/models/nodeDocument';
 import { stringify } from 'yaml';
 
 export function registerCreateNodeFileCommand(): vscode.Disposable {
@@ -53,7 +53,8 @@ export function registerCreateNodeFileCommand(): vscode.Disposable {
 
         try {
             // Write the new content to the file.
-            const newDocumentContent = stringify(new NodeDocument(NodeDocumentType.component, fileName));
+            const nodeDoc = CreateEmptyNodeDocument(NodeDocumentType.component);
+            const newDocumentContent = stringify(nodeDoc);
 
             const content = Buffer.from(newDocumentContent, 'utf8');
             await vscode.workspace.fs.writeFile(fileUri, content);
